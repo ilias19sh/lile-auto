@@ -28,37 +28,47 @@ export async function addVehicle(formData: FormData) {
     const files = formData.getAll('images') as File[];
     const uploadedUrls: string[] = [];
 
-    // Process file uploading synchronously (or via Promise.all) 
-    for (const file of files) {
-        if (file && file.size > 0 && file.name !== 'undefined') {
-            const fileExt = file.name.split('.').pop();
-            const fileName = `img_${Math.random().toString(36).substring(2, 10)}_${Date.now()}.${fileExt}`;
+    // Process file uploading concurrently 
+    const validFiles = files.filter(file => file && file.size > 0 && file.name !== 'undefined');
 
-            // Read array buffer server-side to bypass JSON serialization limits and stream directly to Supabase
-            const arrayBuffer = await file.arrayBuffer();
-            const buffer = new Uint8Array(arrayBuffer);
+    const uploadPromises = validFiles.map(async (file) => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `img_${Math.random().toString(36).substring(2, 10)}_${Date.now()}.${fileExt}`;
 
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('vehicles_images')
-                .upload(fileName, buffer, {
-                    contentType: file.type || 'image/jpeg',
-                    upsert: false
-                });
+        // Read array buffer server-side to bypass JSON serialization limits and stream directly to Supabase
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = new Uint8Array(arrayBuffer);
 
-            if (uploadError) {
-                console.error('Erreur lors de l\'upload de la photo:', uploadError);
-                redirect(`/admin/dashboard/ajouter?error=${encodeURIComponent('Erreur Image Supabase: ' + uploadError.message)}`);
-            } else if (uploadData?.path) {
-                // Fetch public URL to save to DB
-                const { data: publicUrlData } = supabase.storage
-                    .from('vehicles_images')
-                    .getPublicUrl(uploadData.path);
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('vehicles_images')
+            .upload(fileName, buffer, {
+                contentType: file.type || 'image/jpeg',
+                upsert: false
+            });
 
-                if (publicUrlData && publicUrlData.publicUrl) {
-                    uploadedUrls.push(publicUrlData.publicUrl);
-                }
-            }
+        if (uploadError) {
+            throw new Error(uploadError.message);
         }
+
+        if (uploadData?.path) {
+            // Fetch public URL to save to DB
+            const { data: publicUrlData } = supabase.storage
+                .from('vehicles_images')
+                .getPublicUrl(uploadData.path);
+
+            return publicUrlData?.publicUrl || null;
+        }
+        return null;
+    });
+
+    try {
+        const results = await Promise.all(uploadPromises);
+        results.forEach(url => {
+            if (url) uploadedUrls.push(url);
+        });
+    } catch (err: any) {
+        console.error('Erreur lors de l\'upload de la photo:', err);
+        redirect(`/admin/dashboard/ajouter?error=${encodeURIComponent('Erreur Image Supabase: ' + err.message)}`);
     }
 
     // Insert into Supabase

@@ -1,8 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Save, Upload } from 'lucide-react'
+import { ArrowLeft, Upload } from 'lucide-react'
 import { addVehicle } from './actions'
+import { SubmitButton } from './SubmitButton'
 
 export default async function AddVehiclePage(props: { searchParams?: Promise<{ error?: string }> }) {
     const searchParams = await props.searchParams;
@@ -106,9 +107,7 @@ export default async function AddVehiclePage(props: { searchParams?: Promise<{ e
                             <textarea name="description" rows={5} placeholder="Décrivez l'état parfait du véhicule, les options..." className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:bg-white outline-none transition text-black font-medium"></textarea>
                         </div>
 
-                        <button type="submit" className="w-full py-5 bg-black text-white font-black rounded-xl shadow-xl hover:bg-gray-800 hover:-translate-y-1 transition-all active:translate-y-0 text-xl tracking-widest uppercase mt-4 flex items-center justify-center gap-3">
-                            <Save size={24} /> Publier l'annonce
-                        </button>
+                        <SubmitButton />
                     </form>
                 </div>
             </div>
