@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    background-color: #ffffff;
+    /* True Light Mode */
+  }
+}
+
+@layer utilities {
+  .text-brand {
+    @apply text-emerald-500;
+  }
+
+  .bg-brand {
+    @apply bg-gradient-to-r from-emerald-500 to-teal-400;
+  }
+}
