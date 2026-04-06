@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Upload, X, Loader2, Save, ImagePlus, AlertCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -11,13 +11,11 @@ interface FilePreview {
     localUrl: string
     status: 'pending' | 'uploading' | 'done' | 'error'
     remoteUrl?: string
-    error?: string
 }
 
 export function AddVehicleForm() {
     const router = useRouter()
     const supabase = createClient()
-    const fileInputRef = useRef<HTMLInputElement>(null)
 
     const [previews, setPreviews] = useState<FilePreview[]>([])
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -29,19 +27,19 @@ export function AddVehicleForm() {
         const newPreviews: FilePreview[] = selectedFiles.map(file => ({
             file,
             localUrl: URL.createObjectURL(file),
-            status: 'pending',
+            status: 'pending' as const,
         }))
         setPreviews(prev => [...prev, ...newPreviews])
-        // Reset input so the same file can be re-added
-        if (fileInputRef.current) fileInputRef.current.value = ''
+        // Reset input value so the same file can be re-selected
+        e.target.value = ''
     }
 
     const removeFile = (index: number) => {
         setPreviews(prev => {
-            const newPreviews = [...prev]
-            URL.revokeObjectURL(newPreviews[index].localUrl)
-            newPreviews.splice(index, 1)
-            return newPreviews
+            const updated = [...prev]
+            URL.revokeObjectURL(updated[index].localUrl)
+            updated.splice(index, 1)
+            return updated
         })
     }
 
@@ -53,63 +51,67 @@ export function AddVehicleForm() {
         const form = e.currentTarget
         const formData = new FormData(form)
 
-        // Step 1: Upload images in parallel directly from client to Supabase Storage
-        const pendingFiles = previews.filter(p => p.status !== 'done')
-        if (pendingFiles.length > 0) {
-            setPreviews(prev => prev.map(p => p.status === 'pending' ? { ...p, status: 'uploading' } : p))
-        }
+        // Mark all pending as uploading
+        setPreviews(prev => prev.map(p => p.status === 'pending' ? { ...p, status: 'uploading' } : p))
 
         const uploadedUrls: string[] = []
 
-        // Upload each pending image
+        // Upload images directly from browser to Supabase (bypasses Vercel 4.5MB limit)
         const uploadResults = await Promise.allSettled(
             previews.map(async (preview, idx) => {
+                // Skip already uploaded
                 if (preview.status === 'done' && preview.remoteUrl) {
-                    return { idx, url: preview.remoteUrl }
+                    return preview.remoteUrl
                 }
                 const file = preview.file
-                const ext = file.name.split('.').pop() || 'jpg'
+                const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
                 const fileName = `img_${Math.random().toString(36).substring(2, 9)}_${Date.now()}.${ext}`
 
                 const { data, error } = await supabase.storage
                     .from('vehicles_images')
                     .upload(fileName, file, { contentType: file.type || 'image/jpeg', upsert: false })
 
-                if (error) throw { idx, message: error.message }
+                if (error) {
+                    setPreviews(prev => prev.map((p, i) => i === idx ? { ...p, status: 'error' } : p))
+                    throw new Error(error.message)
+                }
 
                 const { data: urlData } = supabase.storage.from('vehicles_images').getPublicUrl(data.path)
                 setPreviews(prev => prev.map((p, i) => i === idx ? { ...p, status: 'done', remoteUrl: urlData.publicUrl } : p))
-                return { idx, url: urlData.publicUrl }
+                return urlData.publicUrl
             })
         )
 
         let hasError = false
         uploadResults.forEach(result => {
             if (result.status === 'fulfilled') {
-                uploadedUrls.push(result.value.url)
+                uploadedUrls.push(result.value)
             } else {
                 hasError = true
-                const err = result.reason as { idx: number; message: string }
-                setPreviews(prev => prev.map((p, i) => i === err.idx ? { ...p, status: 'error', error: err.message } : p))
             }
         })
 
         if (hasError) {
-            setSubmitError("Certaines photos n'ont pas pu être uploadées. Retirez-les ou réessayez.")
+            setSubmitError("Certaines photos n'ont pas pu être envoyées. Retirez-les et réessayez.")
             setIsSubmitting(false)
             return
         }
 
-        // Step 2: Send only text data + urls to the server action (tiny payload, no Vercel limit)
+        // Only text + URLs sent to server (tiny payload)
         formData.set('image_urls_json', JSON.stringify(uploadedUrls))
 
-        const error = await addVehicleWithUrls(formData)
-        if (error) {
-            setSubmitError(error)
+        try {
+            const error = await addVehicleWithUrls(formData)
+            if (error) {
+                setSubmitError(error)
+                setIsSubmitting(false)
+            } else {
+                router.push('/admin/dashboard')
+                router.refresh()
+            }
+        } catch (err) {
+            setSubmitError('Erreur inattendue. Réessayez.')
             setIsSubmitting(false)
-        } else {
-            router.push('/admin/dashboard')
-            router.refresh()
         }
     }
 
@@ -123,12 +125,14 @@ export function AddVehicleForm() {
                 </div>
             )}
 
-            {/* IMAGE UPLOAD SECTION */}
+            {/* IMAGE UPLOAD SECTION - Using <label> for iOS Safari compatibility */}
             <div className="bg-gray-50 p-6 rounded-3xl border border-gray-200">
-                <label className="block text-sm font-black text-black uppercase tracking-widest mb-2 flex items-center gap-2">
+                <p className="text-sm font-black text-black uppercase tracking-widest mb-2 flex items-center gap-2">
                     <Upload size={18} /> Photos du véhicule
-                </label>
-                <p className="text-xs text-gray-500 font-medium mb-5">Les photos sont envoyées <strong>directement</strong> depuis votre appareil (pas de limite de taille).</p>
+                </p>
+                <p className="text-xs text-gray-500 font-medium mb-5">
+                    Photos uploadées <strong>directement</strong> depuis votre appareil — pas de limite de taille.
+                </p>
 
                 {/* Previews Grid */}
                 {previews.length > 0 && (
@@ -159,22 +163,25 @@ export function AddVehicleForm() {
                     </div>
                 )}
 
-                <button
-                    type="button"
-                    disabled={isSubmitting}
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full py-4 border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center gap-2 text-gray-500 hover:border-black hover:text-black transition-all cursor-pointer disabled:opacity-50"
+                {/* 
+                  KEY FIX: Use <label htmlFor> instead of button.onClick() to trigger file input.
+                  iOS Safari blocks programmatic .click() on file inputs — but respects native <label>.
+                */}
+                <label
+                    htmlFor="image-upload-input"
+                    className={`w-full py-4 border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center gap-2 text-gray-500 hover:border-black hover:text-black transition-all cursor-pointer ${isSubmitting ? 'opacity-50 pointer-events-none' : ''}`}
                 >
                     <ImagePlus size={28} />
-                    <span className="font-bold text-sm">Ajouter des photos</span>
-                </button>
+                    <span className="font-bold text-sm">Appuyer pour ajouter des photos</span>
+                </label>
                 <input
-                    ref={fileInputRef}
+                    id="image-upload-input"
                     type="file"
                     multiple
                     accept="image/*"
                     onChange={handleFileChange}
-                    className="hidden"
+                    disabled={isSubmitting}
+                    className="sr-only"
                 />
             </div>
 
@@ -196,18 +203,19 @@ export function AddVehicleForm() {
                 </div>
                 <div>
                     <label className="block text-sm font-bold uppercase tracking-widest text-gray-500 mb-2">Année</label>
-                    <input name="year" type="number" required min="1990" max="2026" placeholder="2021" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:bg-white outline-none transition text-black font-medium" />
+                    {/* type="text" inputMode="numeric" is more reliable than type="number" on iOS */}
+                    <input name="year" type="text" inputMode="numeric" pattern="[0-9]*" required placeholder="2021" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:bg-white outline-none transition text-black font-medium" />
                 </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                     <label className="block text-sm font-bold uppercase tracking-widest text-gray-500 mb-2">Kilométrage (km)</label>
-                    <input name="mileage" type="number" required placeholder="45000" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:bg-white outline-none transition text-black font-medium" />
+                    <input name="mileage" type="text" inputMode="numeric" pattern="[0-9]*" required placeholder="45000" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:bg-white outline-none transition text-black font-medium" />
                 </div>
                 <div>
                     <label className="block text-sm font-bold uppercase tracking-widest text-gray-500 mb-2">Prix TTC (€)</label>
-                    <input name="price" type="number" required placeholder="8500" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:bg-white outline-none transition text-black font-medium" />
+                    <input name="price" type="text" inputMode="numeric" pattern="[0-9]*" required placeholder="8500" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:bg-white outline-none transition text-black font-medium" />
                 </div>
             </div>
 
