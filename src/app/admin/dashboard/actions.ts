@@ -22,3 +22,23 @@ export async function deleteVehicle(id: string) {
     revalidatePath('/vehicules')
     revalidatePath('/')
 }
+
+export async function updateVehicleStatus(id: string, status: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        throw new Error('Not authenticated')
+    }
+
+    const { error } = await supabase.from('vehicles').update({ status }).eq('id', id)
+
+    if (error) {
+        console.error('Failed to update status', error)
+        throw new Error('Update failed')
+    }
+
+    revalidatePath('/admin/dashboard')
+    revalidatePath('/vehicules')
+    revalidatePath('/')
+}

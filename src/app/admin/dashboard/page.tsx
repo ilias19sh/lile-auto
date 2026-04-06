@@ -4,6 +4,8 @@ import { logout } from '../actions'
 import { deleteVehicle } from './actions'
 import { Plus, LogOut, CarFront, Trash2 } from 'lucide-react'
 import Link from 'next/link'
+import { DeleteButton } from './DeleteButton'
+import { StatusToggle } from './StatusToggle'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -78,11 +80,7 @@ export default async function DashboardPage() {
                                         <CarFront size={48} className="text-gray-200" />
                                     )}
                                     <div className="absolute top-4 right-4">
-                                        <span className={`px-4 py-1.5 rounded-full text-xs font-black shadow-sm uppercase tracking-widest ${v.status === 'available' ? 'bg-black text-white' :
-                                            v.status === 'sold' ? 'bg-gray-200 text-gray-600' : 'bg-emerald-100 text-emerald-700'
-                                            }`}>
-                                            {v.status === 'available' ? 'Dispo' : v.status === 'sold' ? 'Vendu' : 'Réservé'}
-                                        </span>
+                                        <StatusToggle id={v.id} currentStatus={v.status} />
                                     </div>
                                 </div>
 
@@ -100,9 +98,7 @@ export default async function DashboardPage() {
                                                 <CarFront size={18} />
                                             </Link>
                                             <form action={deleteVehicle.bind(null, v.id)}>
-                                                <button type="submit" className="p-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl transition" title="Supprimer (Définitif)" onClick={(e) => { if (!confirm('Êtes-vous sûr de vouloir supprimer définitivement ce véhicule ?')) e.preventDefault() }}>
-                                                    <Trash2 size={18} />
-                                                </button>
+                                                <DeleteButton />
                                             </form>
                                         </div>
                                     </div>

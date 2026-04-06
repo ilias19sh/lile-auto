@@ -92,16 +92,16 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
                     )}
 
                     {/* Action */}
-                    <div className="mt-auto p-8 rounded-[2rem] border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50 shadow-inner">
-                        <h3 className="font-extrabold text-slate-900 mb-2 text-xl">Ce véhicule vous intéresse ?</h3>
-                        <p className="text-slate-600 mb-8 font-medium">Contactez-nous pour réserver un essai, c'est gratuit.</p>
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <a href="tel:0300000000" className="flex-1 py-4 bg-emerald-500 text-center text-white font-black rounded-xl shadow-lg shadow-emerald-200 hover:bg-emerald-600 hover:-translate-y-1 transition-all active:translate-y-0 tracking-wide text-lg">
+                    <div className="mt-auto p-6 sm:p-8 rounded-[2rem] border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50 shadow-inner">
+                        <h3 className="font-extrabold text-slate-900 mb-2 text-lg sm:text-xl">Ce véhicule vous intéresse ?</h3>
+                        <p className="text-slate-600 mb-6 sm:mb-8 font-medium text-sm sm:text-base">Contactez-nous pour l'essayer (gratuit et sans engagement).</p>
+                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                            <a href="tel:0621222755" className="flex-1 py-4 bg-emerald-500 text-center text-white font-black rounded-xl shadow-lg shadow-emerald-200 hover:bg-emerald-600 hover:-translate-y-1 transition-all active:translate-y-0 tracking-wide text-sm sm:text-lg">
                                 NOUS APPELER
                             </a>
-                            <Link href="/#recherche" className="flex-1 py-4 bg-white text-slate-900 text-center font-black rounded-xl shadow border border-slate-200 hover:bg-slate-50 hover:-translate-y-1 transition-all active:translate-y-0 tracking-wide text-lg">
-                                VOS COORDONNÉES
-                            </Link>
+                            <a href={`sms:0621222755?body=${encodeURIComponent("Bonjour, je suis intéressé(e) par le véhicule suivant vu sur L'Île Auto : " + vehicle.make + " " + vehicle.model)}`} className="flex-1 py-4 bg-white text-slate-900 text-center font-black rounded-xl shadow border border-slate-200 hover:bg-slate-50 hover:-translate-y-1 transition-all active:translate-y-0 tracking-wide text-sm sm:text-lg">
+                                ENVOYER UN SMS
+                            </a>
                         </div>
                     </div>
                 </div>

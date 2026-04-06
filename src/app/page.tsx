@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import VehicleList, { Vehicle } from '@/components/VehicleList';
-import { ShieldCheck, Crosshair, Phone, Search, Users, Euro } from 'lucide-react';
+import { ShieldCheck, Crosshair, Search, Users, Euro } from 'lucide-react';
+import { SearchForm } from '@/components/SearchForm';
 
 export const revalidate = 0;
 
@@ -100,40 +101,7 @@ export default async function Home() {
             </p>
           </div>
 
-          <form className="bg-white p-8 sm:p-12 rounded-[2rem] border border-gray-200 shadow-xl">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-              <div>
-                <label className="block text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Marque / Modèle</label>
-                <input type="text" placeholder="Ex: Clio, 208, Polo..." className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl text-black focus:ring-2 focus:ring-emerald-500 hover:border-gray-300 outline-none transition" />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Budget maximum (€)</label>
-                <input type="number" placeholder="Ex: 5000" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl text-black focus:ring-2 focus:ring-emerald-500 hover:border-gray-300 outline-none transition" />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Vos critères indispensables</label>
-                <textarea rows={3} placeholder="Boîte auto, essence, couleur..." className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl text-black focus:ring-2 focus:ring-emerald-500 hover:border-gray-300 outline-none transition"></textarea>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
-              <div>
-                <label className="block text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Prénom et Nom</label>
-                <input type="text" placeholder="Jean Dupont" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl text-black focus:ring-2 focus:ring-emerald-500 hover:border-gray-300 outline-none transition" />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Numéro de Téléphone *</label>
-                <div className="relative">
-                  <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input type="tel" required placeholder="06 12 34 56 78" className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-gray-200 rounded-xl text-black focus:ring-2 focus:ring-emerald-500 hover:border-gray-300 outline-none transition" />
-                </div>
-              </div>
-            </div>
-
-            <button type="button" className="w-full py-5 bg-black text-white font-black rounded-xl shadow-lg border border-black hover:bg-slate-800 transition-all active:scale-[0.98] text-xl tracking-wide uppercase">
-              Confier ma recherche
-            </button>
-          </form>
+          <SearchForm />
         </div>
       </section>
 
