@@ -4,7 +4,10 @@ import Link from 'next/link'
 import { ArrowLeft, Save, Upload } from 'lucide-react'
 import { addVehicle } from './actions'
 
-export default async function AddVehiclePage() {
+export default async function AddVehiclePage(props: { searchParams?: Promise<{ error?: string }> }) {
+    const searchParams = await props.searchParams;
+    const error = searchParams?.error;
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -19,6 +22,15 @@ export default async function AddVehiclePage() {
 
                 <div className="bg-white p-6 sm:p-12 rounded-[2.5rem] shadow-sm border border-gray-100">
                     <h1 className="text-3xl sm:text-4xl font-black text-black tracking-tight mb-8 uppercase">Ajouter un véhicule</h1>
+
+                    {error && (
+                        <div className="mb-8 p-6 bg-red-50 text-red-600 rounded-2xl font-bold border border-red-200 shadow-sm flex items-start gap-3">
+                            <div>
+                                <h3 className="uppercase tracking-widest text-xs opacity-70 mb-1">Détail de l'erreur</h3>
+                                <p className="text-sm">{error}</p>
+                            </div>
+                        </div>
+                    )}
 
                     <form action={addVehicle} className="space-y-8">
 

@@ -16,13 +16,13 @@ export async function addVehicle(formData: FormData) {
     // Extract variables
     const make = formData.get('make') as string
     const model = formData.get('model') as string
-    const finish = formData.get('finish') as string
+    const finish = (formData.get('finish') as string) || ''
     const year = parseInt(formData.get('year') as string, 10)
     const mileage = parseInt(formData.get('mileage') as string, 10)
     const price = parseInt(formData.get('price') as string, 10)
     const fuel_type = formData.get('fuel_type') as string
     const transmission = formData.get('transmission') as string
-    const description = formData.get('description') as string
+    const description = (formData.get('description') as string) || ''
 
     // Handle Images Array 
     const files = formData.getAll('images') as File[];
@@ -47,6 +47,7 @@ export async function addVehicle(formData: FormData) {
 
             if (uploadError) {
                 console.error('Erreur lors de l\'upload de la photo:', uploadError);
+                redirect(`/admin/dashboard/ajouter?error=${encodeURIComponent('Erreur Image Supabase: ' + uploadError.message)}`);
             } else if (uploadData?.path) {
                 // Fetch public URL to save to DB
                 const { data: publicUrlData } = supabase.storage
@@ -80,7 +81,7 @@ export async function addVehicle(formData: FormData) {
 
     if (error) {
         console.error('Error inserting vehicle:', error)
-        throw new Error('Failed to add vehicle')
+        redirect(`/admin/dashboard/ajouter?error=${encodeURIComponent('Erreur BDD: ' + error.message)}`)
     }
 
     revalidatePath('/')
