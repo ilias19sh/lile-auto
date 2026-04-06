@@ -9,13 +9,21 @@ export function SearchForm() {
     const [criteria, setCriteria] = useState('')
     const [name, setName] = useState('')
     const [phone, setPhone] = useState('')
+    const [isTriggered, setIsTriggered] = useState(false)
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
 
         const body = `Bonjour, suite à ma visite sur L'Île Auto (Site Web), je souhaite vous confier ma recherche :\n\n- Nom : ${name}\n- Tél : ${phone}\n- Véhicule : ${model}\n- Budget max : ${budget} €\n- Critères : ${criteria}\n\nMerci de me recontacter !`
 
-        window.location.href = `sms:0621222755?body=${encodeURIComponent(body)}`
+        setIsTriggered(true)
+
+        // Try using an anchor tag to click it programmatically, which is sometimes more reliable across browsers
+        const link = document.createElement('a');
+        link.href = `sms:0621222755?body=${encodeURIComponent(body)}`;
+        link.click();
+
+        setTimeout(() => setIsTriggered(false), 5000)
     }
 
     return (
@@ -48,6 +56,13 @@ export function SearchForm() {
                     </div>
                 </div>
             </div>
+
+            {isTriggered && (
+                <div className="mb-6 p-4 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100 font-medium text-center text-sm sm:text-base">
+                    Ouverture de votre application SMS en cours... 📱<br />
+                    <span className="text-xs opacity-80">(Si vous êtes sur ordinateur, cela dépend de vos paramètres d'appels liés à votre téléphone)</span>
+                </div>
+            )}
 
             <button type="submit" className="w-full py-4 sm:py-5 bg-black text-white font-black rounded-xl shadow-lg border border-black hover:bg-slate-800 transition-all active:scale-[0.98] text-lg sm:text-xl tracking-wide uppercase">
                 Confier ma recherche
