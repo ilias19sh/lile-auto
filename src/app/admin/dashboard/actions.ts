@@ -42,3 +42,22 @@ export async function updateVehicleStatus(id: string, status: string) {
     revalidatePath('/vehicules')
     revalidatePath('/')
 }
+
+export async function updateSoldDetails(id: string, soldPrice: number, soldAt: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { error } = await supabase
+        .from('vehicles')
+        .update({ status: 'sold', sold_price: soldPrice, sold_at: soldAt || new Date().toISOString() })
+        .eq('id', id)
+
+    if (error) {
+        console.error('Failed to update sold details', error)
+        throw new Error('Update failed')
+    }
+
+    revalidatePath('/admin/dashboard')
+    revalidatePath('/')
+}
